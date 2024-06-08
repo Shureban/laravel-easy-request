@@ -1,222 +1,133 @@
-# Laravel object mapper
+# Laravel easy request
 
 ## Installation
 
 Require this package with composer using the following command:
 
 ```bash
-composer require shureban/laravel-object-mapper
+composer require shureban/laravel-easy-request
 ```
 
 Add the following class to the `providers` array in `config/app.php`:
 
 ```php
-Shureban\LaravelObjectMapper\ObjectMapperServiceProvider::class,
+Shureban\LaravelEasyRequest\EasyRequestServiceProvider::class,
 ```
 
 You can also publish the config file to change implementations (ie. interface to specific class).
 
 ```shell
-php artisan vendor:publish --provider="Shureban\LaravelObjectMapper\ObjectMapperServiceProvider"
+php artisan vendor:publish --provider="Shureban\LaravelEasyRequest\EasyRequestServiceProvider"
 ```
 
 ## How to use
 
-You have 3 options to use `ObjectMapper`
+All what you need, that is type PhpDoc for your request class.
 
-### Inheritance
-
-Your mapped object (dto) must inheritance from `\Shureban\LaravelObjectMapper\MappableObject`
+For example:
 
 ```php
-class User extends MappableObject
+/**
+ * @method string name()
+ * @method boolean isConfirmed()
+ * @method bool isAdult()
+ * @method integer age()
+ * @method int size()
+ * @method float salary()
+ * @method array workingDays()
+ * @method mixed description()
+ * @method additionalInformation()
+ * @method string|null managerName()
+ * @method DateTime birthday()
+ * @method Carbon firstWorkingDay()
+ */
+class CustomRequest extends \Illuminate\Foundation\Http\FormRequest
 {
-    public int $id; 
 }
 
-$user1 = (new User())->mapFromJson('{"id": 10}');
-$user2 = (new User())->mapFromArray(['id' => 10]);
-$user3 = (new User())->mapFromRequest($formRequest);
-```
-
-### Using trait
-
-Your mapped object (dto) must use `\Shureban\LaravelObjectMapper\MappableTrait`
-
-```php
-class User
+class RegistrationController extends Controller
 {
-    use MappableTrait;
-
-    public int $id; 
-}
-
-$user1 = (new User())->mapFromJson('{"id": 10}');
-$user2 = (new User())->mapFromArray(['id' => 10]);
-$user3 = (new User())->mapFromRequest($formRequest);
-```
-
-### Delegate mapping to ObjectMapper
-
-```php
-class User {
-    public int $id; 
-}
-
-$user1 = (new ObjectMapper(new User()))->mapFromJson('{"id": 10}');
-$user2 = (new ObjectMapper(new User()))->mapFromArray(['id' => 10]);
-$user3 = (new ObjectMapper(new User()))->mapFromRequest($formRequest);
-```
-
-## Mappable cases
-
-Below you will see cases which you can use for mapping data into your object
-
-### Simple types
-
-- `mixed`
-- `string`
-- `bool`, `boolean`
-- `int`, `integer`
-- `double`, `float`
-- `array`
-- `object`
-
-### Box types
-
-- `Carbon`
-- `DateTime`
-- `Collection`
-
-### Custom types
-
-- `CustomClass`
-- `Enum`
-- `Eloquent`
-
-### Array of types
-
-That typo of mapping may be realized only via phpDoc notation
-
-- `int[]`
-- `int[][]`
-- `DateTime[]`
-- `CustomClass[]`
-
-### Special cases
-
-#### Constructor
-
-If your type object has 1 required parameter and value is NOT an array, ObjectMapper will build instance of this type
-via constructor call
-If your type object has 0 or more than 1 required parameters, it will throw WrongConstructorParametersNumberException
-exception
-
-Correct case:
-
-```php
-class User
-{
-    public int $id;
-    
-    public function __construct(int $id) {
-        $this->id = $id;
-    } 
-}
-```
-
-Wrong case:
-
-```php
-class User
-{
-    public int    $id;
-    public string $name;
-    
-    public function __construct(int $id, string $name) {
-        $this->id   = $id;
-        $this->name = $name;
-    } 
-}
-```
-
-#### PhpDoc
-
-PhpDoc type hinting has much more priority than main type.
-
-```php
-class User
-{
-    /**
-    * @var int 
-    */
-    public int $id; 
-    /**
-    * @var DateTime 
-    */
-    public $dateOfBirthday; 
-    /**
-    * @var Address[]
-    */
-    public array $addresses; 
-}
-```
-
-#### Setters
-
-If you want to realize your own logic for setting value, you may place setter method in your mapped object
-This setter should start from `set` word and been in camelCase notation.
-
-```php
-class User
-{
-    public string   $id; 
-    public DateTime $dateOfBirthday;
-    
-    public function setId(int $id, array $rawData = []): void 
+    public function __invoke(CustomRequest $request): JsonResponse
     {
-        $this->id = Hash::make($id);
+        dd(
+            $request->name(), // return value with string type
+            $request->isConfirmed(), // return value with bool type
+            $request->isAdult(), // return value with bool type
+            $request->age(), // return value with integer type
+            $request->size(), // return value with integer type
+            $request->salary(), // return value with float type
+            $request->workingDays(), // return array value
+            $request->description(), // return original value
+            $request->additionalInformation(), // return original value
+            $request->managerName(), // return string value or NULL
+            $request->birthday(), // return date with type DateTime
+            $request->firstWorkingDay(), // return date as Carbon type
+        );    
     }
-    
-    public function setDateOfBirthday(string $dateOfBirthday, array $rawData = []): void 
+}
+```
+
+That is not a problem if you methods written in camelCase format and your request data in snake_case. You may use any of
+cases to get your value.
+
+For example:
+
+```php
+/**
+ * @method int userId()
+ * @method int client_id()
+ */
+class CustomRequest extends \Illuminate\Foundation\Http\FormRequest
+{
+    public function rules(): array
     {
-        $this->dateOfBirthday = new DateTime($dateOfBirthday);
+        return [
+            'user_id' => ['required', 'int'],
+            'clientId' => ['required', 'int'],
+        ];
     }
 }
 
-$user = (new ObjectMapper(new User()))->mapFromArray(['id' => 10, 'dateOfBirthday' => '1991-01-01']);
-
-echo $user->id; // $2y$10$XqHrk0oXa7.9AihthdVxW.dd637zj9EhlTJX0eUEKiV61dbs7a7ZO
-echo $user->dateOfBirthday->format('Y'); // 1991
+class RegistrationController extends Controller
+{
+    public function __invoke(CustomRequest $request): JsonResponse
+    {
+        dd(
+            $request->userId(), // return value for field user_id
+            $request->client_id(), // return value for field clientId
+        );    
+    }
+}
 ```
 
-Some words about second parameter `$rawData`. Value of this parameter depends on method selected for mapping
+If you need to work with models, and get model by field_id, that is easy.
 
-- mapFromJson - $rawData will be JSON
-- mapFromArray - $rawData will be Array
-- mapFromRequest - $rawData will be FormRequest object
-
-#### Readonly parameters
-
-Readonly parameters will always be skipped
+For example:
 
 ```php
-class User
+/**
+ * @method User user()
+ */
+class CustomRequest extends \Illuminate\Foundation\Http\FormRequest
 {
-    public readonly int $id; 
+    public function rules(): array
+    {
+        return [
+            'user_id' => ['required', 'int'],
+        ];
+    }
 }
 
-$user = (new ObjectMapper(new User()))->mapFromArray(['id' => 10]);
-
-echo $user->id; // 0
+class RegistrationController extends Controller
+{
+    public function __invoke(CustomRequest $request): JsonResponse
+    {
+        dd(
+            $request->user(), // return instance of models User
+        );    
+    }
+}
 ```
 
-## Config rewriting
+You have to name your property with _id ending or Id(in camel case), and set method type which is extends Model.
 
-In `object_mapper.php` config file have been presented all mappable types classes. You have opportunity to rewrite
-mapping flow or realize you own one.
-
-If you need to create your own type mapping, follow this way:
-
-- create class inherited from `\Shureban\LaravelObjectMapper\Types\Type`
-- place you type into config file in `type -> box` array
