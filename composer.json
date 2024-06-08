@@ -1,0 +1,42 @@
+{
+    "name": "shureban/laravel-easy-request",
+    "description": "Laravel easy way to write methods for requests",
+    "keywords": [
+        "laravel",
+        "request",
+        "form request",
+        "shureban"
+    ],
+    "type": "laravel-package",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Shureban",
+            "email": "Shureban@gmail.com",
+            "role": "Developer"
+        }
+    ],
+    "minimum-stability": "dev",
+    "version": "0.0.1",
+    "autoload": {
+        "psr-4": {
+            "Shureban\\LaravelEasyRequest\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Shureban\\LaravelEasyRequest\\Tests\\": "tests/"
+        }
+    },
+    "require": {
+        "php": "^8.1"
+    },
+    "prefer-stable": true,
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Shureban\\LaravelEasyRequest\\EasyRequestServiceProvider"
+            ]
+        }
+    }
+}
