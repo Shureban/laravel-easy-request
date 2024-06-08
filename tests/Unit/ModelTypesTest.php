@@ -14,5 +14,6 @@ class ModelTypesTest extends TestCase
         $request->merge(['test_model_id' => 1]);
 
         $this->assertInstanceOf(TestModel::class, $request->testModel());
+        $this->assertEquals(1, $request->testModel()->id);
     }
 }

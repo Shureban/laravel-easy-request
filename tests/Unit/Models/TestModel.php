@@ -6,8 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class TestModel extends Model
 {
-    public static function find(): static
+    protected $fillable = [
+        'id',
+    ];
+
+    public static function find(mixed $value): static
     {
-        return new TestModel();
+        return new TestModel(['id' => $value]);
     }
 }
