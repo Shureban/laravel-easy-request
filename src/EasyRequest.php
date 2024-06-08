@@ -12,6 +12,8 @@ use Shureban\LaravelEasyRequest\Exceptions\UndefinedClassException;
 
 abstract class EasyRequest extends FormRequest
 {
+    private array $models = [];
+
     /**
      * @param $method
      * @param $parameters
@@ -63,7 +65,11 @@ abstract class EasyRequest extends FormRequest
         $instance = (new ReflectionClass($classNamespace))->newInstanceWithoutConstructor();
 
         if ($instance instanceof Model) {
-            return $instance->find($value);
+            if (empty($this->models[$fieldName])) {
+                $this->models[$fieldName] = $instance->find($value);
+            }
+
+            return $this->models[$fieldName];
         }
 
         return new $classNamespace($value);
