@@ -2,6 +2,8 @@
 
 namespace Shureban\LaravelEasyRequest\Tests\Unit;
 
+use Carbon\Carbon;
+use DateTime;
 use Shureban\LaravelEasyRequest\Tests\Unit\Requests\OrNullTypesRequest;
 use Tests\TestCase;
 
@@ -73,9 +75,33 @@ class OrNullTypesTest extends TestCase
         $request = new OrNullTypesRequest();
 
         $this->assertEquals(null, $request->testMixed());
-        
+
         $request->merge(['testMixed' => 'string']);
 
         $this->assertEquals('string', $request->testMixed());
+    }
+
+    public function test_DateTime()
+    {
+        $request = new OrNullTypesRequest();
+
+        $this->assertEquals(null, $request->testDateTime());
+
+        $request->merge(['testDateTime' => '2024-01-01']);
+
+        $this->assertTrue($request->testDateTime() instanceof DateTime);
+        $this->assertEquals($request->testDateTime(), new DateTime('2024-01-01'));
+    }
+
+    public function test_Carbon()
+    {
+        $request = new OrNullTypesRequest();
+
+        $this->assertEquals(null, $request->testCarbon());
+
+        $request->merge(['testCarbon' => '2024-01-01']);
+
+        $this->assertTrue($request->testCarbon() instanceof Carbon);
+        $this->assertEquals($request->testCarbon(), new Carbon('2024-01-01'));
     }
 }

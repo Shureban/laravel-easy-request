@@ -59,7 +59,7 @@ class ClassExtraInformation
     /**
      * @return string|null
      */
-    public function getNamespace(): ?string
+    private function getNamespace(): ?string
     {
         if (preg_match(self::NamespaceRegex, $this->getClassFileContent(), $regexResult)) {
             return $regexResult['namespace'];

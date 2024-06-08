@@ -2,6 +2,8 @@
 
 namespace Shureban\LaravelEasyRequest\Tests\Unit\Requests;
 
+use Carbon\Carbon;
+use DateTime;
 use Shureban\LaravelEasyRequest\EasyRequest;
 
 /**
@@ -13,6 +15,8 @@ use Shureban\LaravelEasyRequest\EasyRequest;
  * @method float|null testFloat()
  * @method array|null testArray()
  * @method mixed|null testMixed()
+ * @method DateTime|null testDateTime()
+ * @method Carbon|null testCarbon()
  *
  * @package Shureban\LaravelEasyRequest\Tests\Unit\Requests
  */

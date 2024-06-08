@@ -6,9 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Http\FormRequest;
 use ReflectionClass;
 use ReflectionException;
+use Shureban\LaravelEasyRequest\Attributes\RequestFieldName;
 use Shureban\LaravelEasyRequest\Enums\MethodType;
 use Shureban\LaravelEasyRequest\Exceptions\UndefinedClassException;
-use Str;
 
 abstract class EasyRequest extends FormRequest
 {
@@ -17,7 +17,7 @@ abstract class EasyRequest extends FormRequest
      * @param $parameters
      *
      * @return mixed
-     * @throws UndefinedClassException
+     * @throws UndefinedClassException|ReflectionException
      */
     public function __call($method, $parameters)
     {
@@ -28,6 +28,13 @@ abstract class EasyRequest extends FormRequest
         $phpDocMethodDoesNotExists = is_null($phpDocMethod);
         if ($reflection->hasMethod($method) || $phpDocMethodDoesNotExists) {
             return parent::__call($phpDocMethod, $parameters);
+        }
+
+        $fieldName = (string)new RequestFieldName($this, $phpDocMethod->getName());
+
+        $hasNotValue = !$this->has($fieldName);
+        if ($hasNotValue && $phpDocMethod->mightBeNull()) {
+            return null;
         }
 
         return match ($phpDocMethod->getMethodType()) {
@@ -45,25 +52,18 @@ abstract class EasyRequest extends FormRequest
      */
     private function processCustomType(ClassExtraInformation $classInformation, Method $method): mixed
     {
-        $paramName = $this->getParamName($method);
-
-        $hasNotValue = !$this->has($paramName);
-        if ($hasNotValue && $method->mightBeNull()) {
-            return null;
-        }
-
-        $value          = $this->input($paramName);
+        $fieldName      = (string)new RequestFieldName($this, $method->getName());
+        $value          = $this->input($fieldName);
         $classNamespace = $classInformation->getFullObjectUseNamespace($method->getType());
 
         if (!class_exists($classNamespace)) {
             throw new UndefinedClassException($method->getType());
         }
 
-        /** @var Model $instance */
         $instance = (new ReflectionClass($classNamespace))->newInstanceWithoutConstructor();
 
         if ($instance instanceof Model) {
-            return $instance->find($paramName);
+            return $instance->find($value);
         }
 
         return new $classNamespace($value);
@@ -76,37 +76,15 @@ abstract class EasyRequest extends FormRequest
      */
     private function processBaseType(Method $method): mixed
     {
-        $paramName = $this->getParamName($method);
-
-        $hasNotValue = !$this->has($paramName);
-        if ($hasNotValue && $method->mightBeNull()) {
-            return null;
-        }
+        $fieldName = (string)new RequestFieldName($this, $method->getName());
 
         return match ($method->getMethodType()) {
-            MethodType::String                    => $this->string($paramName),
-            MethodType::Boolean, MethodType::Bool => $this->boolean($paramName),
-            MethodType::Integer, MethodType::Int  => $this->integer($paramName),
-            MethodType::Float                     => $this->float($paramName),
-            MethodType::Array                     => (array)$this->input($paramName),
-            default                               => $this->input($paramName),
-        };
-    }
-
-    private function getParamName(Method $method): string
-    {
-        $snakeCaseName       = Str::snake($method->getName());
-        $snakeCaseWithIdName = Str::snake($method->getName()) . '_id';
-        $camelCaseName       = Str::camel($snakeCaseName);
-        $camelCaseWithIdName = Str::camel($snakeCaseName) . 'Id';
-
-        return match (true) {
-            $this->has($method->getName())   => $method->getName(),
-            $this->has($snakeCaseName)       => $snakeCaseName,
-            $this->has($snakeCaseWithIdName) => $snakeCaseWithIdName,
-            $this->has($camelCaseName)       => $camelCaseName,
-            $this->has($camelCaseWithIdName) => $camelCaseWithIdName,
-            default                          => $method->getName(),
+            MethodType::String                    => $this->string($fieldName),
+            MethodType::Boolean, MethodType::Bool => $this->boolean($fieldName),
+            MethodType::Integer, MethodType::Int  => $this->integer($fieldName),
+            MethodType::Float                     => $this->float($fieldName),
+            MethodType::Array                     => (array)$this->input($fieldName),
+            default                               => $this->input($fieldName),
         };
     }
 }
